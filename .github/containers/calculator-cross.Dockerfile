@@ -34,9 +34,4 @@ RUN apt update \
         gcc-x86-64-linux-gnu \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/x86-linux-gnu \
-    && mkdir -p /usr/x64-linux-gnu \
-    && ln -sfn /usr/i686-linux-gnu /usr/x86-linux-gnu \
-    && ln -sfn /usr/x86_64-linux-gnu /usr/x64-linux-gnu
-
 WORKDIR /workspace
