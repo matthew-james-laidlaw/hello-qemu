@@ -37,12 +37,7 @@ jobs:
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
 
       - name: Configure
-        run: cmake                                                                \
-              -B build                                                            \
-              -G "Ninja Multi-Config"                                             \
-              --toolchain "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
-              -DANDROID_ABI=${{ matrix.abi }}                                     \
-              -DANDROID_PLATFORM=android-21
+        run: cmake -B build -G "Ninja Multi-Config" --toolchain "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-21
 
       - name: Build
         run: cmake --build build --config Release
