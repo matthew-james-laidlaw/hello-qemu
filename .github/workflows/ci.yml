@@ -1,40 +1,21 @@
-name: ci
+name: ci.android
 
 on: [push, pull_request, workflow_dispatch]
 
-permissions:
-  contents: read
-  packages: read
-
 jobs:
 
-  test:
-    container:
-      image: ${{ vars.CI_CONTAINER_IMAGE || format('ghcr.io/{0}/calculator-cross:latest', github.repository_owner) }}
+  android-tests:
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: "arm-linux-androideabi", qemu: "qemu-arm",     }
-          - { name: "arm-linux-gnueabi",     qemu: "qemu-arm",     }
-          - { name: "arm-linux-gnueabihf",   qemu: "qemu-arm",     }
-          - { name: "arm-linux-musleabi",    qemu: "qemu-arm",     }
-          - { name: "arm-linux-musleabihf",  qemu: "qemu-arm",     }
-          - { name: "aarch64-linux-android", qemu: "qemu-aarch64", }
-          - { name: "aarch64-linux-gnu",     qemu: "qemu-aarch64", }
-          - { name: "aarch64-linux-musl",    qemu: "qemu-aarch64", }
-          - { name: "riscv64-linux-android", qemu: "qemu-riscv64", }
-          - { name: "riscv64-linux-gnu",     qemu: "qemu-riscv64", }
-          - { name: "riscv64-linux-musl",    qemu: "qemu-riscv64", }
-          - { name: "i686-linux-android",    qemu: "qemu-i386",    }
-          - { name: "i686-linux-gnu",        qemu: "qemu-i386",    }
-          - { name: "i686-linux-musl",       qemu: "qemu-i386",    }
-          - { name: "x86_64-linux-android",  qemu: "qemu-x86_64",  }
-          - { name: "x86_64-linux-gnu",      qemu: "qemu-x86_64",  }
-          - { name: "x86_64-linux-musl",     qemu: "qemu-x86_64",  }
-
-    name: ${{ matrix.name }}
+          - { abi: arm64-v8a   }
+          - { abi: armeabi-v7a }
+          - { abi: x86         }
+          - { abi: x86_64      }
+    
+    name: ${{ matrix.abi }}
     runs-on: ubuntu-latest
 
     steps:
@@ -43,19 +24,22 @@ jobs:
         with:
           submodules: "recursive"
 
-      - name: Verify required tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          cmake --version
-          ninja --version
-          ${{ matrix.qemu }} --version
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          build-tools: 33.0.2
 
       - name: Configure
-        run: cmake -B build -G "Ninja Multi-Config" --toolchain cmake/toolchains/${{ matrix.name }}.cmake
+        run: cmake                                                                \
+              -B build                                                            \
+              -G "Ninja Multi-Config"                                             \
+              --toolchain "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI=${{ matrix.abi }}                                     \
+              -DANDROID_PLATFORM=android-21
 
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Test
-        run: ${{ matrix.qemu }} -L /usr/${{ matrix.name }} ./build/bin/Release/calculator_tests
+      - name: Run tests
+        run: adb shell build/bin/Release/calculator_tests
