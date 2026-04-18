@@ -46,6 +46,7 @@ jobs:
           submodules: "recursive"
 
       - name: Verify required tools
+        shell: bash
         run: |
           set -euo pipefail
           cmake --version
