@@ -12,8 +12,6 @@ jobs:
     container:
       image: ${{ vars.CI_CONTAINER_IMAGE || format('ghcr.io/{0}/calculator-cross:latest', github.repository_owner) }}
 
-    runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -37,7 +35,7 @@ jobs:
           - { name: "x86_64-linux-musl",     qemu: "qemu-x86_64",  }
 
     name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: ubuntu-latest
 
     steps:
 
