@@ -31,13 +31,25 @@ jobs:
           build-tools: 33.0.2
           cmdline-tools: 11076708
 
+          set -euo pipefail
+          yes | sdkmanager --install \
+            "platform-tools" \
+            "emulator" \
+            "platforms;android-33" \
+            "system-images;android-33;google_apis;${{ matrix.emulator-arch }}"
+
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
 
       - name: Install Android NDK
         run: |
           set -euo pipefail
-          yes | sdkmanager --install "ndk;26.3.11579264"
+          yes | sdkmanager --install \
+            "platform-tools" \
+            "emulator" \
+            "platforms;android-33" \
+            "ndk;26.3.11579264" \
+            "system-images;android-33;google_apis;${{ matrix.emulator-arch }}"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
 
       - name: Configure
