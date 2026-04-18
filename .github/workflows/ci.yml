@@ -60,4 +60,4 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Test
-        run: ${{ matrix.qemu }} ${{ matrix.qemu_args }} ./build/Release/bin/calculator_tests
+        run: ${{ matrix.qemu }} ${{ matrix.qemu_args }} ./build/bin/Release/calculator_tests
