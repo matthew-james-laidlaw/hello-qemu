@@ -1,0 +1,62 @@
+name: ci
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+
+  test:
+    container:
+      image: ${{ vars.CI_CONTAINER_IMAGE || format('ghcr.io/{0}/calculator-cross:latest', github.repository_owner) }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "armv7-linux-androideabi", runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-androideabi", }
+          - { name: "armv7-linux-gnueabi",     runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-gnueabi",     }
+          - { name: "armv7-linux-gnueabihf",   runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-gnueabihf",   }
+          - { name: "armv7-linux-musleabi",    runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-musleabi",    }
+          - { name: "armv7-linux-musleabihf",  runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-musleabihf",  }
+          - { name: "armv8-linux-android",     runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-android",     }
+          - { name: "armv8-linux-gnu",         runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-gnu",         }
+          - { name: "armv8-linux-musl",        runs_on: "ubuntu-latest", qemu: "qemu-arm",     qemu_args: "-L /usr/arm-linux-musl",        }
+          - { name: "riscv32-linux-gnu",       runs_on: "ubuntu-latest", qemu: "qemu-riscv32", qemu_args: "-L /usr/riscv32-linux-gnu",     }
+          - { name: "riscv32-linux-musl",      runs_on: "ubuntu-latest", qemu: "qemu-riscv32", qemu_args: "-L /usr/riscv32-linux-musl",    }
+          - { name: "riscv64-linux-android",   runs_on: "ubuntu-latest", qemu: "qemu-riscv64", qemu_args: "-L /usr/riscv64-linux-android", }
+          - { name: "riscv64-linux-gnu",       runs_on: "ubuntu-latest", qemu: "qemu-riscv64", qemu_args: "-L /usr/riscv64-linux-gnu",     }
+          - { name: "riscv64-linux-musl",      runs_on: "ubuntu-latest", qemu: "qemu-riscv64", qemu_args: "-L /usr/riscv64-linux-musl",    }
+          - { name: "x86-linux-android",       runs_on: "ubuntu-latest", qemu: "qemu-i386",    qemu_args: "-L /usr/i686-linux-android",    }
+          - { name: "x86-linux-gnu",           runs_on: "ubuntu-latest", qemu: "qemu-i386",    qemu_args: "-L /usr/i686-linux-gnu",        }
+          - { name: "x86-linux-musl",          runs_on: "ubuntu-latest", qemu: "qemu-i386",    qemu_args: "-L /usr/i686-linux-musl",       }
+          - { name: "x64-linux-android",       runs_on: "ubuntu-latest", qemu: "qemu-x86_64",  qemu_args: "-L /usr/x86_64-linux-android",     }
+          - { name: "x64-linux-gnu",           runs_on: "ubuntu-latest", qemu: "qemu-x86_64",  qemu_args: "-L /usr/x86_64-linux-gnu",         }
+          - { name: "x64-linux-musl",          runs_on: "ubuntu-latest", qemu: "qemu-x86_64",  qemu_args: "-L /usr/x86_64-linux-musl",        }
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Verify required tools
+        run: |
+          set -euo pipefail
+          cmake --version
+          ninja --version
+          ${{ matrix.qemu }} --version
+
+      - name: Configure
+        run: cmake -B build -G "Ninja Multi-Config" --toolchain cmake/toolchains/${{ matrix.name }}.cmake
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ${{ matrix.qemu }} ${{ matrix.qemu_args }} ./build/Release/bin/calculator_tests
