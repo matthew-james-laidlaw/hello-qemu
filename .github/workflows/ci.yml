@@ -8,8 +8,11 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix:
-        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+      include:
+        - { abi: armeabi-v7a, run-tests: false }
+        - { abi: arm64-v8a,   run-tests: false }
+        - { abi: x86,         run-tests: false }
+        - { abi: x86_64,      run-tests: true  }
 
     name: ${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -30,32 +33,21 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Install emulator image (x86_64 only)
-        if: matrix.abi == 'x86_64'
+      - name: Enable KVM
+        if: matrix.run-tests == true
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses
-          yes | sdkmanager --install \
-            "emulator" \
-            "system-images;android-33;google_apis;x86_64"
-
-      - name: Enable KVM (x86_64 only)
-        if: matrix.abi == 'x86_64'
-        run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Test (x86_64 emulator only)
-        if: matrix.abi == 'x86_64'
+      - name: Run Tests
+        if: matrix.run-tests == true
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
-          arch: x86_64
+          api-level: 21
           target: google_apis
-          force-avd-creation: true
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          arch: ${{ matrix.abi }}
           script: |
             set -euo pipefail
             TEST_BIN="$(find build -type f -name calculator_tests | head -n 1)"
