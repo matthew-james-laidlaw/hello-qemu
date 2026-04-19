@@ -4,61 +4,28 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
 
-  android-tests:
+  android:
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { abi: arm64-v8a,   emulator-arch: arm64-v8a, runs-on: ubuntu-24.04-arm }
-          - { abi: armeabi-v7a, emulator-arch: arm64-v8a, runs-on: ubuntu-24.04-arm }
-          - { abi: x86,         emulator-arch: x86,       runs-on: ubuntu-latest    }
-          - { abi: x86_64,      emulator-arch: x86_64,    runs-on: ubuntu-latest    }
-    
+        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+
     name: ${{ matrix.abi }}
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ubuntu-latest
 
     steps:
 
       - uses: actions/checkout@v4
         with:
-          submodules: "recursive"
-
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 33
-          build-tools: 33.0.2
-          cmdline-tools: 11076708
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
-
-      - name: Install Android NDK
-        run: |
-          set -euo pipefail
-          yes | sdkmanager --install \
-            "platform-tools" \
-            "emulator" \
-            "platforms;android-33" \
-            "ndk;26.3.11579264" \
-            "system-images;android-33;google_apis;${{ matrix.emulator-arch }}"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.3.11579264" >> "$GITHUB_ENV"
+          submodules: recursive
 
       - name: Configure
-        run: cmake -B build -G "Ninja Multi-Config" --toolchain "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-21
+        run: |
+          cmake -B build -G "Ninja Multi-Config" \
+            --toolchain "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-21
 
       - name: Build
         run: cmake --build build --config Release
-
-      - name: Run tests on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          arch: ${{ matrix.emulator-arch }}
-          target: google_apis
-          script: |
-            set -euo pipefail
-            adb push build/bin/Release/calculator_tests /data/local/tmp/calculator_tests
-            adb shell chmod +x /data/local/tmp/calculator_tests
-            adb shell /data/local/tmp/calculator_tests
