@@ -24,6 +24,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
       - name: Configure
         run: |
           cmake -B build -G "Ninja Multi-Config" \
