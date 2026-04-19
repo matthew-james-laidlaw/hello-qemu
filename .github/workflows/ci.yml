@@ -56,11 +56,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            TEST_BIN="$(find build -type f -name calculator_tests | head -n 1)"
-            if [ -z "$TEST_BIN" ]; then
-              echo "calculator_tests binary not found"
-              exit 1
-            fi
-            adb push "$TEST_BIN" /data/local/tmp/calculator_tests
+            adb push ./build/bin/Release/calculator_tests /data/local/tmp/calculator_tests
             adb shell chmod +x /data/local/tmp/calculator_tests
             adb shell /data/local/tmp/calculator_tests
