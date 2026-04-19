@@ -37,15 +37,6 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Install emulator and system image
-        if: matrix.run-tests == true
-        run: |
-          set -euo pipefail
-          yes | sdkmanager --licenses
-          yes | sdkmanager --install \
-            "emulator" \
-            "system-images;android-21;default;x86_64"
-
       - name: Enable KVM
         if: matrix.run-tests == true
         run: |
